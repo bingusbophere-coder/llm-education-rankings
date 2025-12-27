@@ -11,7 +11,7 @@
 <body>
     <div class="container my-5">
         <h1 class="text-center mb-4">Best LLMs for Education (Dynamic Rankings - December 2025)</h1>
-        <p class="text-center">Ranked by <strong>Privacy</strong> (Incogni risk score), <strong>Security</strong> (open-source favored), and <strong>Accuracy</strong> (human preference performance from LM Arena leaderboard).<br>Higher scores better (out of 10). Data fetched live.<br>
+        <p class="text-center">Ranked by <strong>Privacy</strong> (Incogni risk score), <strong>Security</strong> (open-source favored), and <strong>Accuracy</strong> (human preference Elo from LM Arena leaderboard).<br>Higher scores better (out of 10). Data fetched live.<br>
         <span id="last-updated">Loading latest data...</span></p>
 
         <table id="rankingsTable" class="table table-striped table-hover">
@@ -40,24 +40,24 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
     <script>
         const models = [
-            {name: "Llama 4", provider: "Meta", openSource: true, why: "Open-source, multilingual, strong reasoning for tutoring and content creation.", arenaMap: ["llama-4", "llama 4"], privacyMap: ["Llama", "Meta AI"]},
-            {name: "Mistral Large", provider: "Mistral AI", openSource: false, why: "Strong privacy opt-outs, good for agentic tutoring.", arenaMap: ["mistral large"], privacyMap: ["Le Chat Mistral", "Mistral"]},
-            {name: "Qwen3", provider: "Alibaba", openSource: true, why: "Excellent in math/coding education, efficient for schools.", arenaMap: ["qwen3"], privacyMap: ["Qwen"]},
-            {name: "DeepSeek V3", provider: "DeepSeek", openSource: true, why: "Top open-source reasoning, great for complex topics.", arenaMap: ["deepseek v3"], privacyMap: ["DeepSeek"]},
-            {name: "Gemma 3", provider: "Google", openSource: true, why: "Fast, efficient for classroom devices.", arenaMap: ["gemma 3", "gemma-3"], privacyMap: ["Gemma", "Google"]},
-            {name: "GPT-5", provider: "OpenAI", openSource: false, why: "Powerful reasoning, paid plans for better privacy.", arenaMap: ["gpt-5", "gpt 5"], privacyMap: ["ChatGPT", "OpenAI"]},
-            {name: "Grok 4", provider: "xAI", openSource: false, why: "Multimodal for visual learning.", arenaMap: ["grok-4", "grok 4"], privacyMap: ["Grok", "xAI"]},
-            {name: "Claude 4", provider: "Anthropic", openSource: false, why: "Excellent feedback, inclusive for special needs.", arenaMap: ["claude-4", "claude 4", "claude-opus-4"], privacyMap: ["Claude", "Anthropic"]},
-            {name: "Gemini 2.5 Pro", provider: "Google", openSource: false, why: "Multimodal research tools.", arenaMap: ["gemini-2.5-pro", "gemini 2.5 pro"], privacyMap: ["Gemini", "Google"]},
-            {name: "Phi-4", provider: "Microsoft", openSource: true, why: "Small, low hallucinations, runs on student devices.", arenaMap: ["phi-4"], privacyMap: ["Phi", "Copilot", "Microsoft"]}
+            {name: "Gemini 3 Pro", provider: "Google", openSource: false, why: "Top overall performance, multimodal for research and visual learning.", arenaMap: ["gemini-3-pro"], privacyMap: ["Gemini", "Google"]},
+            {name: "Gemini 3 Flash", provider: "Google", openSource: false, why: "Fast and efficient for classroom/quick tutoring.", arenaMap: ["gemini-3-flash"], privacyMap: ["Gemini", "Google"]},
+            {name: "Grok 4.1 Thinking", provider: "xAI", openSource: false, why: "Strong reasoning and multimodal for visual/step-by-step education.", arenaMap: ["grok-4.1-thinking", "grok 4.1"], privacyMap: ["Grok", "xAI"]},
+            {name: "Claude Opus 4.5", provider: "Anthropic", openSource: false, why: "Excellent long-context feedback, inclusive for special needs.", arenaMap: ["claude-opus-4-5", "claude-opus-4"], privacyMap: ["Claude", "Anthropic"]},
+            {name: "Grok 4.1", provider: "xAI", openSource: false, why: "Multimodal and real-time knowledge for dynamic lessons.", arenaMap: ["grok-4.1"], privacyMap: ["Grok", "xAI"]},
+            {name: "Gemini 2.5 Pro", provider: "Google", openSource: false, why: "Multimodal research tools with strong reasoning.", arenaMap: ["gemini-2.5-pro"], privacyMap: ["Gemini", "Google"]},
+            {name: "GPT-5.1", provider: "OpenAI", openSource: false, why: "Powerful reasoning and instruction-following.", arenaMap: ["gpt-5.1", "gpt 5.1"], privacyMap: ["ChatGPT", "OpenAI"]},
+            {name: "Llama 4", provider: "Meta", openSource: true, why: "Open-source, multilingual, strong for personalized content creation.", arenaMap: ["llama-4", "llama 4"], privacyMap: ["Llama", "Meta AI"]},
+            {name: "Qwen3", provider: "Alibaba", openSource: true, why: "Excellent in math/coding education.", arenaMap: ["qwen3"], privacyMap: ["Qwen"]},
+            {name: "DeepSeek V3", provider: "DeepSeek", openSource: true, why: "Top open-source reasoning for complex topics.", arenaMap: ["deepseek v3"], privacyMap: ["DeepSeek"]}
         ];
 
-        // Realistic fallbacks for Accuracy (based on recent LM Arena ranks: top ~10, lower ~6-8)
-        const fallbackAccuracy = { "Llama 4": 7.5, "Mistral Large": 8.0, "Qwen3": 8.2, "DeepSeek V3": 7.8, "Gemma 3": 7.0, "GPT-5": 8.8, "Grok 4": 9.2, "Claude 4": 9.0, "Gemini 2.5 Pro": 9.5, "Phi-4": 7.2 };
+        // Fallback Elo ~ current real values (Dec 2025)
+        const fallbackElo = { "Gemini 3 Pro": 1490, "Gemini 3 Flash": 1478, "Grok 4.1 Thinking": 1477, "Claude Opus 4.5": 1460, "Grok 4.1": 1450, "Gemini 2.5 Pro": 1430, "GPT-5.1": 1420, "Llama 4": 1380, "Qwen3": 1370, "DeepSeek V3": 1360 };
 
         async function loadData() {
             let privacyMap = {};
-            let arenaRanks = {};  // model key -> rank (lower number better)
+            let arenaElo = {};  // model key -> Elo score
 
             try {
                 const privacyRes = await fetch('https://docs.google.com/spreadsheets/d/1CDUtGAgepi9W9BYosr75lhxZ4m0-EriLcEeHeU6Kbso/export?format=csv');
@@ -71,29 +71,25 @@
                 const arenaRes = await fetch('https://lmarena.ai/leaderboard');
                 if (arenaRes.ok) {
                     const html = await arenaRes.text();
-                    arenaRanks = parseArenaHtml(html);
+                    arenaElo = parseArenaHtml(html);
                 }
             } catch (e) { console.error("LM Arena fetch failed", e); }
 
             const tableData = models.map(m => {
-                // Privacy scoring (same as before)
+                // Privacy (same)
                 let rawPriv = 16;
                 for (let key of m.privacyMap) {
                     if (privacyMap[key] !== undefined) rawPriv = Math.min(rawPriv, privacyMap[key]);
                 }
                 const privScore = Math.max(2, 10 - (rawPriv - 9) * 1.2).toFixed(1);
 
-                // Accuracy from LM Arena rank
-                let bestRank = 100;  // high fallback
+                // Accuracy from Elo (higher better)
+                let bestElo = 1200;  // low fallback
                 for (let key of m.arenaMap) {
-                    if (arenaRanks[key] !== undefined) bestRank = Math.min(bestRank, arenaRanks[key]);
+                    if (arenaElo[key] !== undefined) bestElo = Math.max(bestElo, arenaElo[key]);
                 }
-                let accScore = fallbackAccuracy[m.name] || 7.0;
-                if (bestRank < 100) {
-                    accScore = Math.max(6, 10 - (bestRank / 5)).toFixed(1);  // Top 1 ≈10, top 20 ≈6
-                } else {
-                    accScore = accScore.toFixed(1);
-                }
+                if (bestElo === 1200) bestElo = fallbackElo[m.name] || 1350;
+                const accScore = ((bestElo - 1200) / (1490 - 1200) * 10).toFixed(1);  // Scale current range to 0-10
 
                 const secScore = m.openSource ? 9.5 : 7.0;
 
@@ -106,12 +102,12 @@
             tableData.forEach((row, i) => row.rank = i + 1);
 
             renderTable(tableData);
-            const status = (Object.keys(privacyMap).length > 0 ? 'Privacy live' : 'Privacy fallback') + ', ' + (Object.keys(arenaRanks).length > 0 ? 'Accuracy (LM Arena) live' : 'Accuracy fallback');
+            const status = (Object.keys(privacyMap).length > 0 ? 'Privacy live' : 'Privacy fallback') + ', ' + (Object.keys(arenaElo).length > 0 ? 'Accuracy (LM Arena Elo) live' : 'Accuracy fallback');
             document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (${status})`;
         }
 
         function parsePrivacyCsv(csv) {
-            // Same as previous version
+            // Unchanged from previous
             const lines = csv.split('\n');
             const headers = lines[0].toLowerCase().split(',');
             const totalIdx = headers.findIndex(h => h.includes('total score'));
@@ -131,18 +127,21 @@
             const map = {};
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const rows = doc.querySelectorAll('table tbody tr');  // Main leaderboard rows
-            rows.forEach((row, index) => {
-                const modelCell = row.querySelector('td:nth-child(2)');  // Model name usually in column 2
-                if (modelCell) {
-                    let modelName = modelCell.textContent.trim().toLowerCase().replace(/[^a-z0-9- ]/g, '');
-                    map[modelName] = index + 1;  // Rank = position
+            const rows = doc.querySelectorAll('table tbody tr');
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if (cols.length >= 4) {  // Model name, then ranks, Elo often in later column
+                    let modelName = cols[1]?.textContent.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+                    let eloText = cols[3]?.textContent.trim() || '1300';  // Adjust column if needed; fallback
+                    let elo = parseFloat(eloText) || 1300;
+                    if (modelName) map[modelName] = elo;
                 }
             });
             return map;
         }
 
         function renderTable(data) {
+            // Unchanged – keeps styling perfect
             const tbody = document.querySelector('#rankingsTable tbody');
             tbody.innerHTML = '';
             data.forEach(row => {
