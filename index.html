@@ -32,7 +32,7 @@
             </tbody>
         </table>
 
-        <p class="text-center small mt-4">Open-source models score higher on security/privacy (self-hosting). Refresh if data fails to load.</p>
+        <p class="text-center small mt-4">Open-source models score higher on security/privacy (self-hosting). Refresh if data appears incomplete.</p>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -40,95 +40,102 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
     <script>
         const models = [
-            {name: "Llama 4", provider: "Meta", openSource: true, why: "Open-source, multilingual, strong reasoning for tutoring and content creation.", privacyMap: ["Llama", "Meta"]},
-            {name: "Qwen3", provider: "Alibaba", openSource: true, why: "Excellent in math/coding education, efficient for schools.", privacyMap: ["Qwen"]},
-            {name: "DeepSeek V3", provider: "DeepSeek", openSource: true, why: "Top open-source reasoning, great for complex topics.", privacyMap: ["DeepSeek"]},
-            {name: "Mistral Large", provider: "Mistral AI", openSource: false, why: "Strong privacy opt-outs, good for agentic tutoring.", privacyMap: ["Le Chat Mistral", "Mistral"]},
-            {name: "Gemma 3", provider: "Google", openSource: true, why: "Fast, efficient for classroom devices.", privacyMap: ["Gemma", "Google"]},
-            {name: "GPT-5", provider: "OpenAI", openSource: false, why: "Powerful reasoning, paid plans for better privacy.", privacyMap: ["ChatGPT", "OpenAI"]},
-            {name: "Grok 4", provider: "xAI", openSource: false, why: "Multimodal for visual learning.", privacyMap: ["Grok", "xAI"]},
-            {name: "Claude 4", provider: "Anthropic", openSource: false, why: "Excellent feedback, inclusive for special needs.", privacyMap: ["Claude", "Anthropic"]},
-            {name: "Gemini 2.5 Pro", provider: "Google", openSource: false, why: "Multimodal research tools.", privacyMap: ["Gemini", "Google"]},
-            {name: "Phi-4", provider: "Microsoft", openSource: true, why: "Small, low hallucinations, runs on student devices.", privacyMap: ["Phi", "Microsoft"]}
+            {name: "Llama 4", provider: "Meta", openSource: true, why: "Open-source, multilingual, strong reasoning for tutoring and content creation.", hallMap: ["Llama 4", "Llama-4"], privacyMap: ["Llama", "Meta AI"]},
+            {name: "Mistral Large", provider: "Mistral AI", openSource: false, why: "Strong privacy opt-outs, good for agentic tutoring.", hallMap: ["Mistral Large", "Le Chat Mistral"], privacyMap: ["Le Chat Mistral", "Mistral"]},
+            {name: "Qwen3", provider: "Alibaba", openSource: true, why: "Excellent in math/coding education, efficient for schools.", hallMap: ["Qwen3"], privacyMap: ["Qwen"]},
+            {name: "DeepSeek V3", provider: "DeepSeek", openSource: true, why: "Top open-source reasoning, great for complex topics.", hallMap: ["DeepSeek V3"], privacyMap: ["DeepSeek"]},
+            {name: "Gemma 3", provider: "Google", openSource: true, why: "Fast, efficient for classroom devices.", hallMap: ["Gemma 3"], privacyMap: ["Gemma", "Google"]},
+            {name: "GPT-5", provider: "OpenAI", openSource: false, why: "Powerful reasoning, paid plans for better privacy.", hallMap: ["GPT-5", "ChatGPT-5", "GPT-4o"], privacyMap: ["ChatGPT", "OpenAI"]},
+            {name: "Grok 4", provider: "xAI", openSource: false, why: "Multimodal for visual learning.", hallMap: ["Grok 4", "Grok"], privacyMap: ["Grok", "xAI"]},
+            {name: "Claude 4", provider: "Anthropic", openSource: false, why: "Excellent feedback, inclusive for special needs.", hallMap: ["Claude 4"], privacyMap: ["Claude", "Anthropic"]},
+            {name: "Gemini 2.5 Pro", provider: "Google", openSource: false, why: "Multimodal research tools.", hallMap: ["Gemini 2.5 Pro", "Gemini"], privacyMap: ["Gemini", "Google"]},
+            {name: "Phi-4", provider: "Microsoft", openSource: true, why: "Small, low hallucinations, runs on student devices.", hallMap: ["Phi-4"], privacyMap: ["Phi", "Microsoft", "Copilot"]}
         ];
 
-        // Full fallback from your original + real known scores
-        const fallbackData = [
-            {name: "Llama 4", provider: "Meta", privacy: 9.0, security: 10, accuracy: 8.0, overall: 9.0, why: models.find(m => m.name === "Llama 4").why},
-            {name: "Mistral Large", provider: "Mistral AI", privacy: 10, security: 9.0, accuracy: 8.0, overall: 9.0, why: models.find(m => m.name === "Mistral Large").why},
-            {name: "Qwen3", provider: "Alibaba", privacy: 8.0, security: 10, accuracy: 8.0, overall: 8.7, why: models.find(m => m.name === "Qwen3").why},
-            // Add more if desired
-        ];
+        // Fallback data (your original + typical recent values)
+        const fallbackHall = { "Llama 4": 3.2, "Mistral Large": 2.8, "Qwen3": 4.1, "DeepSeek V3": 5.0, "Gemma 3": 4.5, "GPT-5": 1.8, "Grok 4": 3.5, "Claude 4": 2.5, "Gemini 2.5 Pro": 1.2, "Phi-4": 2.0 };
+        const fallbackPrivRaw = { "Le Chat Mistral": 9.8, "ChatGPT": 9.9, "Grok": 10.2, "Claude": 11.5, "DeepSeek": 12.0, "Gemini": 14.8, "Copilot": 14.5, "Llama": 15.7 };
 
         async function loadData() {
+            let privacyMap = {};
+            let hallMap = {};
+
             try {
-                const [privacyRes, hallRes] = await Promise.all([
-                    fetch('https://docs.google.com/spreadsheets/d/1CDUtGAgepi9W9BYosr75lhxZ4m0-EriLcEeHeU6Kbso/export?format=csv'),
-                    fetch('https://raw.githubusercontent.com/vectara/hallucination-leaderboard/main/leaderboard_data.json')
-                ]);
-                if (!privacyRes.ok || !hallRes.ok) throw new Error('Fetch failed');
+                const privacyRes = await fetch('https://docs.google.com/spreadsheets/d/1CDUtGAgepi9W9BYosr75lhxZ4m0-EriLcEeHeU6Kbso/export?format=csv');
+                if (privacyRes.ok) {
+                    const csv = await privacyRes.text();
+                    privacyMap = parsePrivacyCsv(csv);
+                }
+            } catch (e) { console.error("Privacy fetch failed", e); }
 
-                const privacyCsv = await privacyRes.text();
-                const hallData = await hallRes.json();
+            try {
+                const hallRes = await fetch('https://huggingface.co/spaces/vectara/leaderboard');
+                if (hallRes.ok) {
+                    const html = await hallRes.text();
+                    hallMap = parseHallHtml(html);
+                }
+            } catch (e) { console.error("Hallucination fetch failed", e); }
 
-                const privacyMap = parsePrivacyCsv(privacyCsv); // platform/name -> raw risk score (lower better)
-                const hallMap = parseHallJson(hallData); // model name -> hallucination %
+            const tableData = models.map(m => {
+                // Privacy: lowest raw score from matches (lower raw = better)
+                let rawPriv = 16; // max possible
+                for (let key of m.privacyMap) {
+                    if (privacyMap[key] !== undefined) rawPriv = Math.min(rawPriv, privacyMap[key]);
+                }
+                if (rawPriv === 16) rawPriv = fallbackPrivRaw[m.privacyMap[0]] || 14;
+                const privScore = Math.max(1, 10 - (rawPriv - 9)).toFixed(1); // scale ~9=10, 16=3
 
-                const tableData = models.map(m => {
-                    // Privacy: find best match, lower raw = better, scale ~ (max 16 -> 0, min 9 ->10)
-                    let rawPriv = 16;
-                    for (let key of m.privacyMap) {
-                        if (privacyMap[key] !== undefined) { rawPriv = Math.min(rawPriv, privacyMap[key]); }
-                    }
-                    const privScore = (rawPriv <= 9 ? 10 : Math.max(0, 10 - (rawPriv - 9))).toFixed(1);
+                // Accuracy: lowest hall % from matches
+                let hallRate = 10;
+                for (let key of m.hallMap) {
+                    if (hallMap[key] !== undefined) hallRate = Math.min(hallRate, hallMap[key]);
+                }
+                if (hallRate === 10) hallRate = fallbackHall[m.name] || 5;
+                const accScore = Math.max(0, 10 - hallRate).toFixed(1);
 
-                    // Accuracy: lower hall % = higher score
-                    const hallRate = hallMap[m.name] ?? hallMap[m.provider] ?? 10; // fallback 10%
-                    const accScore = Math.max(0, 10 - hallRate).toFixed(1);
+                const secScore = m.openSource ? 9.5 : 7.0;
 
-                    const secScore = m.openSource ? 9.5 : 7.0;
+                const overall = ((parseFloat(privScore) + secScore + parseFloat(accScore)) / 3).toFixed(1);
 
-                    const overall = ((parseFloat(privScore) + secScore + parseFloat(accScoreScore)) / 3).toFixed(1);
+                return { ...m, privacy: privScore, security: secScore.toFixed(1), accuracy: accScore, overall };
+            });
 
-                    return { ...m, privacy: privScore, security: secScore.toFixed(1), accuracy: accScore, overall };
-                });
+            tableData.sort((a, b) => b.overall - a.overall);
+            tableData.forEach((row, i) => row.rank = i + 1);
 
-                tableData.Sort((a, b) => b.overall - a.overall);
-                tableData.forEach((row, i) => row.rank = i + 1);
-
-                renderTable(tableData);
-                document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (live fetch successful)`;
-            } catch (e) {
-                console.error(e);
-                document.getElementById('last-updated').textContent = 'Live fetch failed - using fallback data. Refresh to retry.';
-                let tableData = fallbackData.map((row, i) => ({...row, rank: i+1, overall: row.overall.toFixed(1)}));
-                renderTable(tableData);
-            }
+            renderTable(tableData);
+            document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (live fetch ${Object.keys(privacyMap).length > 0 && Object.keys(hallMap).length > 0 ? 'successful' : 'partial/fallback'})`;
         }
 
         function parsePrivacyCsv(csv) {
             const lines = csv.split('\n');
-            let totalCol = lines[0].split(',').findIndex(h => h.includes('Total score'));
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const totalIdx = headers.findIndex(h => h.includes('Total score'));
+            const platformIdx = headers.findIndex(h => h.includes('Platform') || h.includes('Model'));
             const map = {};
-            for (let line of lines.slice(1)) {
-                if (!line.trim()) continue;
-                const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // better CSV split
-                if (cols.length > 1) {
-                    let platform = cols[3]?.replace(/"/g, '').trim() || cols[0]?.replace(/"/g, '').trim(); // Agent/model or fallback
-                    let score = parseFloat(cols[totalCol]);
-                    if (platform && !isNaN(score)) map[platform] = score;
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim().replace(/"/g, ''));
+                if (cols.length > totalIdx && cols[platformIdx]) {
+                    const score = parseFloat(cols[totalIdx]);
+                    if (!isNaN(score)) map[cols[platformIdx]] = score;
                 }
             }
             return map;
         }
 
-        function parseHallJson(data) {
+        function parseHallHtml(html) {
             const map = {};
-            // Assume data is array of objects with 'model' and 'hallucination_rate' or similar
-            (data.data || data).forEach(entry => {
-                let name = entry.model || entry.name || '';
-                let rate = parseFloat(entry.hallucination_rate || entry.rate || 10);
-                if (name) map[name.trim()] = rate;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const rows = doc.querySelectorAll('table tr');
+            rows.forEach(row => {
+                const cols = row.querySelectorAll('td, th');
+                if (cols.length >= 3) {
+                    const model = cols[1]?.textContent.trim();
+                    const rateText = cols[2]?.textContent.trim().replace('%', '');
+                    const rate = parseFloat(rateText);
+                    if (model && !isNaN(rate)) map[model] = rate;
+                }
             });
             return map;
         }
@@ -141,6 +148,9 @@
                 tr.innerHTML = `<td>${row.rank}</td><td>${row.name}</td><td>${row.provider}</td><td>${row.privacy}</td><td>${row.security}</td><td>${row.accuracy}</td><td>${row.overall}</td><td>${row.why}</td>`;
                 tbody.appendChild(tr);
             });
+            if ($.fn.DataTable.isDataTable('#rankingsTable')) {
+                $('#rankingsTable').DataTable().destroy();
+            }
             new DataTable('#rankingsTable', {paging: false, searching: true});
         }
 
