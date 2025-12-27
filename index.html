@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LM Arena Leaderboard for Education</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Best LLMs for Education (LM Arena Rankings)</title>
+    <link href="https://cdn.jsdelivr.net
+
+/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container my-5">
         <h1 class="text-center mb-4">Best LLMs for Education (LM Arena Rankings)</h1>
-        <p class="text-center">Ranked by live human preference Arena Score from LM Arena leaderboard.<br>Higher score = better real-world performance (reasoning, instruction-following, creativity).<br>
-        <span id="last-updated">Loading latest data...</span></p>
+        <p class="text-center">Ranked by live human preference from the LM Arena leaderboard.<br>Data fetched automatically.<br>
+        <span id="last-updated">Loading latest rankings...</span></p>
 
         <table id="rankingsTable" class="table table-striped table-hover">
             <thead class="table-primary">
@@ -20,7 +22,6 @@
                     <th>Rank</th>
                     <th>Model</th>
                     <th>Provider</th>
-                    <th>Arena Score</th>
                     <th>Why for Education?</th>
                 </tr>
             </thead>
@@ -29,7 +30,7 @@
             </tbody>
         </table>
 
-        <p class="text-center small mt-4">Data fetched live from community LM Arena history. Refresh for updates.</p>
+        <p class="text-center small mt-4">Data from community LM Arena history. Refresh for the latest rankings.</p>
     </div>
 
     <!-- Bingus Logo Watermark -->
@@ -65,7 +66,7 @@
                     const json = await res.json();
                     const dates = Object.keys(json).sort().reverse();
                     const latest = json[dates[0]];
-                    arenaData = latest.overall || latest.text || latest; // Focus on overall/text scores
+                    arenaData = latest.overall || latest.text || latest;
                     success = true;
                 }
             } catch (e) {
@@ -80,14 +81,14 @@
                         bestScore = Math.max(bestScore, arenaData[cleanKey]);
                     }
                 }
-                return { ...m, score: bestScore.toFixed(1) };
+                return { ...m, score: bestScore };
             });
 
             tableData.sort((a, b) => b.score - a.score);
             tableData.forEach((row, i) => row.rank = i + 1);
 
             renderTable(tableData);
-            document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (LM Arena data: ${success ? 'live' : 'fallback'})`;
+            document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (LM Arena rankings: ${success ? 'live' : 'cached'})`;
         }
 
         function renderTable(data) {
@@ -95,7 +96,7 @@
             tbody.innerHTML = '';
             data.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.rank}</td><td>${row.name}</td><td>${row.provider}</td><td>${row.score}</td><td>${row.why}</td>`;
+                tr.innerHTML = `<td>${row.rank}</td><td>${row.name}</td><td>${row.provider}</td><td>${row.why}</td>`;
                 tbody.appendChild(tr);
             });
 
@@ -107,8 +108,8 @@
                 searching: true,
                 info: false,
                 columnDefs: [
-                    { targets: [0,3], className: 'text-center' },
-                    { targets: [1,2,4], className: 'text-start' }
+                    { targets: 0, className: 'text-center' },
+                    { targets: [1,2,3], className: 'text-start' }
                 ]
             });
         }
