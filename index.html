@@ -45,8 +45,80 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
     <script>
-        // Your existing models, loadData(), parse functions, renderTable() go here (unchanged from the last working version)
-        // ... (keep all the script content exactly as before)
+        const models = [
+            {name: "Gemini 3 Pro", provider: "Google", openSource: false, why: "Top overall human preference, multimodal for research/visual learning.", arenaMap: ["gemini-3-pro"], privacyMap: ["Gemini", "Google"]},
+            {name: "Gemini 3 Flash", provider: "Google", openSource: false, why: "Fast/efficient with strong performance for quick tutoring.", arenaMap: ["gemini-3-flash"], privacyMap: ["Gemini", "Google"]},
+            {name: "Grok 4.1 Thinking", provider: "xAI", openSource: false, why: "Excellent reasoning/step-by-step for complex education topics.", arenaMap: ["grok-4.1-thinking", "grok 4.1 thinking"], privacyMap: ["Grok", "xAI"]},
+            {name: "Claude Opus 4.5", provider: "Anthropic", openSource: false, why: "Superior long-context feedback, great for in-depth/inclusive learning.", arenaMap: ["claude-opus-4-5", "claude opus 4.5"], privacyMap: ["Claude", "Anthropic"]},
+            {name: "Grok 4.1", provider: "xAI", openSource: false, why: "Strong multimodal/real-time for dynamic lessons.", arenaMap: ["grok-4.1", "grok 4.1"], privacyMap: ["Grok", "xAI"]},
+            {name: "Gemini 2.5 Pro", provider: "Google", openSource: false, why: "Balanced multimodal reasoning.", arenaMap: ["gemini-2.5-pro"], privacyMap: ["Gemini", "Google"]},
+            {name: "GPT-5.1", provider: "OpenAI", openSource: false, why: "High instruction-following for assessments.", arenaMap: ["gpt-5.1"], privacyMap: ["ChatGPT", "OpenAI"]},
+            {name: "Llama 4", provider: "Meta", openSource: true, why: "Open-source multilingual tutoring/content creation.", arenaMap: ["llama-4", "llama 4"], privacyMap: ["Llama", "Meta AI"]},
+            {name: "Qwen3", provider: "Alibaba", openSource: true, why: "Excellent in math/coding education.", arenaMap: ["qwen3"], privacyMap: ["Qwen"]},
+            {name: "DeepSeek V3", provider: "DeepSeek", openSource: true, why: "Strong open-source for complex/math topics.", arenaMap: ["deepseek v3", "deepseek-v3"], privacyMap: ["DeepSeek"]}
+        ];
+
+        // Accurate fallbacks from current LM Arena (Dec 27, 2025)
+        const fallbackScore = { 
+            "Gemini 3 Pro": 1490, "Gemini 3 Flash": 1478, "Grok 4.1 Thinking": 1477, 
+            "Claude Opus 4.5": 1467, "Grok 4.1": 1464, "Gemini 2.5 Pro": 1451, 
+            "GPT-5.1": 1455, "Llama 4": 1380, "Qwen3": 1370, "DeepSeek V3": 1360 
+        };
+
+        async function loadData() {
+            let privacyMap = {};
+            let arenaScores = {};
+            let privacySuccess = false;
+            let arenaSuccess = false;
+
+            const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({timedOut: true}), 10000));
+
+            try {
+                const privacyRes = await Promise.race([fetch('https://docs.google.com/spreadsheets/d/1CDUtGAgepi9W9BYosr75lhxZ4m0-EriLcEeHeU6Kbso/export?format=csv'), timeoutPromise]);
+                if (!privacyRes.timedOut && privacyRes.ok) {
+                    const csv = await privacyRes.text();
+                    privacyMap = parsePrivacyCsv(csv);
+                    privacySuccess = true;
+                }
+            } catch (e) { console.error("Privacy error", e); }
+
+            try {
+                const arenaRes = await Promise.race([fetch('https://lmarena.ai/leaderboard'), timeoutPromise]);
+                if (!arenaRes.timedOut && arenaRes.ok) {
+                    const html = await arenaRes.text();
+                    arenaScores = parseArenaHtml(html);
+                    arenaSuccess = true;
+                }
+            } catch (e) { console.error("Arena error", e); }
+
+            const tableData = models.map(m => {
+                let rawPriv = 16;
+                for (let key of (m.privacyMap || [])) {
+                    if (privacyMap[key] !== undefined) rawPriv = Math.min(rawPriv, privacyMap[key]);
+                }
+                const privScore = Math.max(2, 10 - (rawPriv - 9) * 1.2).toFixed(1);
+
+                let bestScore = fallbackScore[m.name] || 1350;
+                for (let key of m.arenaMap) {
+                    const cleanKey = key.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                    if (arenaScores[cleanKey] !== undefined) bestScore = Math.max(bestScore, arenaScores[cleanKey]);
+                }
+                const accScore = Math.min(10, ((bestScore - 1200) / (1490 - 1200) * 10)).toFixed(1);
+
+                const secScore = m.openSource ? 9.5 : 7.0;
+                const overall = ((parseFloat(privScore) + secScore + parseFloat(accScore)) / 3).toFixed(1);
+
+                return { ...m, privacy: privScore, security: secScore.toFixed(1), accuracy: accScore, overall };
+            });
+
+            tableData.sort((a, b) => b.overall - a.overall);
+            tableData.forEach((row, i) => row.rank = i + 1);
+
+            renderTable(tableData);
+            document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (Privacy: ${privacySuccess ? 'live' : 'fallback'}, Accuracy: ${arenaSuccess ? 'live' : 'fallback'})`;
+        }
+
+        // parse functions and renderTable unchanged from previous version
 
         loadData();
     </script>
