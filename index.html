@@ -4,33 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Best LLMs for Education (LM Arena Rankings)</title>
-    <link href="https://cdn.jsdelivr.net
-
-/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.bootstrap5.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div class="container my-5">
-        <h1 class="text-center mb-4">Best LLMs for Education (LM Arena Rankings)</h1>
-        <p class="text-center">Ranked by live human preference from the LM Arena leaderboard.<br>Data fetched automatically.<br>
-        <span id="last-updated">Loading latest rankings...</span></p>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold text-primary">Best LLMs for Education</h1>
+            <p class="lead text-muted">Ranked by live human preference from the LM Arena leaderboard</p>
+            <p class="text-muted small">
+                Data fetched automatically • 
+                <span id="last-updated">Loading latest rankings...</span>
+            </p>
+        </div>
 
-        <table id="rankingsTable" class="table table-striped table-hover">
-            <thead class="table-primary">
-                <tr>
-                    <th>Rank</th>
-                    <th>Model</th>
-                    <th>Provider</th>
-                    <th>Why for Education?</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Filled dynamically -->
-            </tbody>
-        </table>
+        <div id="rankings-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <!-- Cards filled dynamically -->
+        </div>
 
-        <p class="text-center small mt-4">Data from community LM Arena history. Refresh for the latest rankings.</p>
+        <div class="text-center mt-5">
+            <p class="text-muted small">Data from community LM Arena history • Refresh for updates</p>
+        </div>
     </div>
 
     <!-- Bingus Logo Watermark -->
@@ -40,8 +35,6 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.min.js"></script>
     <script>
         const models = [
             {name: "Gemini 3 Pro", provider: "Google", why: "Top overall human preference, multimodal for research/visual learning.", arenaKeys: ["gemini-3-pro"]},
@@ -74,7 +67,7 @@
             }
 
             const tableData = models.map(m => {
-                let bestScore = 1350; // fallback
+                let bestScore = 1350;
                 for (let key of m.arenaKeys) {
                     const cleanKey = key.toLowerCase();
                     if (arenaData[cleanKey] !== undefined) {
@@ -85,34 +78,45 @@
             });
 
             tableData.sort((a, b) => b.score - a.score);
-            tableData.forEach((row, i) => row.rank = i + 1);
 
-            renderTable(tableData);
-            document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (LM Arena rankings: ${success ? 'live' : 'cached'})`;
+            renderCards(tableData);
+            document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleString()} (rankings ${success ? 'live' : 'cached'})`;
         }
 
-        function renderTable(data) {
-            const tbody = document.querySelector('#rankingsTable tbody');
-            tbody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.rank}</td><td>${row.name}</td><td>${row.provider}</td><td>${row.why}</td>`;
-                tbody.appendChild(tr);
-            });
+        function renderCards(data) {
+            const container = document.getElementById('rankings-container');
+            container.innerHTML = '';
 
-            if ($.fn.DataTable.isDataTable('#rankingsTable')) {
-                $('#rankingsTable').DataTable().destroy();
-            }
-            $('#rankingsTable').DataTable({
-                paging: false,
-                searching: true,
-                info: false,
-                columnDefs: [
-                    { targets: 0, className: 'text-center' },
-                    { targets: [1,2,3], className: 'text-start' }
-                ]
+            data.forEach((row, i) => {
+                const rank = i + 1;
+                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+                const badgeClass = rank === 1 ? 'bg-warning text-dark' : rank === 2 ? 'bg-secondary text-white' : rank === 3 ? 'bg-danger text-white' : 'bg-primary';
+
+                const card = document.createElement('div');
+                card.className = 'col';
+                card.innerHTML = `
+                    <div class="card h-100 shadow-sm hover-shadow transition-all">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="badge ${badgeClass} fs-5 px-3 py-2">${medal}</span>
+                                <small class="text-muted">${row.provider}</small>
+                            </div>
+                            <h5 class="card-title fw-bold text-primary mb-3">${row.name}</h5>
+                            <p class="card-text text-muted flex-grow-1">${row.why}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
             });
         }
+
+        // Simple CSS transition for hover
+        const style = document.createElement('style');
+        style.textContent = `
+            .transition-all { transition: all 0.3s ease; }
+            .hover-shadow:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important; }
+        `;
+        document.head.appendChild(style);
 
         loadData();
     </script>
